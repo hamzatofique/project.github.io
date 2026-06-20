@@ -1,0 +1,239 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <algorithm>
+#include <string>
+using namespace std;
+
+// ═══════════════════════════════════════════
+//   Base Class: Person
+// ═══════════════════════════════════════════
+class Person {
+protected:
+    string name;
+    int    age;
+    string contact;
+public:
+    Person() : age(0) {}
+    Person(string n, int a, string c)
+        : name(n), age(a), contact(c) {}
+
+    virtual void display() const {
+        cout << "Name: " << name
+             << "  Age: " << age << endl;
+    }
+    virtual ~Person() {}
+    string getName()    const { return name; }
+    string getContact() const { return contact; }
+};
+
+// ═══════════════════════════════════════════
+//   Derived Class: Student
+// ═══════════════════════════════════════════
+class Student : public Person {
+private:
+    int    studentID;
+    float  gpa;
+    int    marks[5];
+    string grade;
+
+    string calcGrade(float g) {
+        if (g >= 3.7) return "A";
+        if (g >= 3.3) return "A-";
+        if (g >= 3.0) return "B+";
+        if (g >= 2.7) return "B";
+        if (g >= 2.3) return "B-";
+        return "C or below";
+    }
+
+    float calcGPA(int m[]) {
+        float total = 0;
+        for (int i = 0; i < 5; i++) total += m[i];
+        return (total / 500.0f) * 4.0f;
+    }
+
+public:
+    Student() : studentID(0), gpa(0) {
+        for (int i = 0; i < 5; i++) marks[i] = 0;
+    }
+
+    Student(int id, string name, int age,
+            string contact, int m[5])
+        : Person(name, age, contact), studentID(id) {
+        for (int i = 0; i < 5; i++) marks[i] = m[i];
+        gpa   = calcGPA(marks);
+        grade = calcGrade(gpa);
+    }
+
+    void display() const override {
+        cout << "\n+------------------------------------------+" << endl;
+        cout << "|  ID      : " << studentID << endl;
+        cout << "|  Name    : " << name << endl;
+        cout << "|  Age     : " << age << endl;
+        cout << "|  Contact : " << contact << endl;
+        cout << "|  Marks   : ";
+        for (int i = 0; i < 5; i++)
+            cout << marks[i] << (i < 4 ? "  " : "");
+        cout << endl;
+        cout << "|  GPA     : " << gpa << endl;
+        cout << "|  Grade   : " << grade << endl;
+        cout << "+------------------------------------------+" << endl;
+    }
+
+    int   getID()    const { return studentID; }
+    float getGPA()   const { return gpa; }
+    string getGrade()const { return grade; }
+    string getNameP()const { return name; }
+};
+
+// ═══════════════════════════════════════════
+//   Database Manager
+// ═══════════════════════════════════════════
+class Database {
+    vector<Student> students;
+    string filename = "students.dat";
+
+public:
+    Database() { loadFromFile(); }
+
+    void addStudent() {
+        int id, age, marks[5];
+        string name, contact;
+        cout << "\n  Enter Student ID    : "; cin >> id;
+        cin.ignore();
+        cout << "  Enter Name          : "; getline(cin, name);
+        cout << "  Enter Age           : "; cin >> age;
+        cin.ignore();
+        cout << "  Enter Contact       : "; getline(cin, contact);
+        cout << "  Enter Marks (5 subjects): ";
+        for (int i = 0; i < 5; i++) cin >> marks[i];
+
+        students.emplace_back(id, name, age, contact, marks);
+        saveToFile();
+        cout << "\n  [+] Student added successfully!" << endl;
+    }
+
+    void searchByID() {
+        int id;
+        cout << "\n  Enter Student ID to search: "; cin >> id;
+        for (auto& s : students)
+            if (s.getID() == id) { s.display(); return; }
+        cout << "  [!] Student not found." << endl;
+    }
+
+    void searchByName() {
+        string name;
+        cin.ignore();
+        cout << "\n  Enter Name to search: "; getline(cin, name);
+        bool found = false;
+        for (auto& s : students)
+            if (s.getNameP().find(name) != string::npos)
+                { s.display(); found = true; }
+        if (!found) cout << "  [!] No matching student." << endl;
+    }
+
+    void deleteStudent() {
+        int id;
+        cout << "\n  Enter Student ID to delete: "; cin >> id;
+        auto it = remove_if(students.begin(), students.end(),
+            [id](const Student& s){ return s.getID() == id; });
+        if (it != students.end()) {
+            students.erase(it, students.end());
+            saveToFile();
+            cout << "  [✓] Student deleted." << endl;
+        } else {
+            cout << "  [!] ID not found." << endl;
+        }
+    }
+
+    void displayAll() const {
+        if (students.empty()) {
+            cout << "\n  No records found." << endl; return;
+        }
+        cout << "\n  Total Students: " << students.size() << endl;
+        for (const auto& s : students) s.display();
+    }
+
+    void sortByGPA() {
+        sort(students.begin(), students.end(),
+            [](const Student& a, const Student& b){
+                return a.getGPA() > b.getGPA();
+            });
+        cout << "\n  [✓] Sorted by GPA (highest first)" << endl;
+        displayAll();
+    }
+
+    void statistics() const {
+        if (students.empty()) { cout << "  No data." << endl; return; }
+        float total = 0, highest = 0;
+        string topStudent;
+        for (const auto& s : students) {
+            total += s.getGPA();
+            if (s.getGPA() > highest) {
+                highest = s.getGPA();
+                topStudent = s.getNameP();
+            }
+        }
+        cout << "\n  ╔══════════ CLASS STATISTICS ══════════╗" << endl;
+        cout << "  ║  Total Students : " << students.size() << endl;
+        cout << "  ║  Average GPA    : " << total / students.size() << endl;
+        cout << "  ║  Highest GPA    : " << highest << endl;
+        cout << "  ║  Top Student    : " << topStudent << endl;
+        cout << "  ╚══════════════════════════════════════╝" << endl;
+    }
+
+    void saveToFile() {
+        ofstream file(filename, ios::binary | ios::trunc);
+        for (const auto& s : students)
+            file.write((char*)&s, sizeof(Student));
+    }
+
+    void loadFromFile() {
+        ifstream file(filename, ios::binary);
+        if (!file) return;
+        Student s;
+        while (file.read((char*)&s, sizeof(Student)))
+            students.push_back(s);
+    }
+};
+
+// ═══════════════════════════════════════════
+//   Main Menu
+// ═══════════════════════════════════════════
+void showMenu() {
+    cout << "\n  ╔══════════════════════════════════════╗" << endl;
+    cout << "  ║    STUDENT MANAGEMENT SYSTEM v2.0   ║" << endl;
+    cout << "  ║    Developer: Hamza | PUCIT Lahore  ║" << endl;
+    cout << "  ╠══════════════════════════════════════╣" << endl;
+    cout << "  ║  [1] Add Student                    ║" << endl;
+    cout << "  ║  [2] Search by ID                   ║" << endl;
+    cout << "  ║  [3] Search by Name                 ║" << endl;
+    cout << "  ║  [4] Display All Students           ║" << endl;
+    cout << "  ║  [5] Delete Student                 ║" << endl;
+    cout << "  ║  [6] Sort by GPA                    ║" << endl;
+    cout << "  ║  [7] Class Statistics               ║" << endl;
+    cout << "  ║  [0] Exit                           ║" << endl;
+    cout << "  ╚══════════════════════════════════════╝" << endl;
+    cout << "  Enter choice: ";
+}
+
+int main() {
+    Database db;
+    int choice;
+    do {
+        showMenu();
+        cin >> choice;
+        switch (choice) {
+            case 1: db.addStudent();    break;
+            case 2: db.searchByID();    break;
+            case 3: db.searchByName();  break;
+            case 4: db.displayAll();    break;
+            case 5: db.deleteStudent(); break;
+            case 6: db.sortByGPA();     break;
+            case 7: db.statistics();    break;
+            case 0: cout << "\n  Goodbye!\n"; break;
+            default: cout << "\n  [!] Invalid choice.\n";
+        }
+    } while (choice != 0);
+    return 0;
+}
