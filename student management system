@@ -1,0 +1,103 @@
+Base Class: Person
+// nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+class Person {
+protected:
+string name;
+int age;
+C++ Student Management System
+Advanced C++ OOP Project · File I/O · STL · ~420 Lines
+C++17 OOP File I/O STL Portfolio
+Hamza · BSCS, PUCIT Lahore · Upwork Portfolio
+string contact;
+public:
+Person(string n, int a, string c)
+: name(n), age(a), contact(c) {}
+virtual void display() const {
+cout << "Name: " << name << " Age: " << age << endl;
+}
+virtual ~Person() {}
+string getName() const { return name; }
+string getContact() const { return contact; }
+};
+// nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+// Derived Class: Student
+// nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+class Student : public Person {
+private:
+int studentID;
+float gpa;
+int marks[5]; // 5 subjects
+string grade;
+string calcGrade(float g) {
+if (g >= 3.7) return "A";
+if (g >= 3.3) return "A-";
+if (g >= 3.0) return "B+";
+if (g >= 2.7) return "B";
+return "C or below";
+}
+public:
+C++ Student Management System
+Advanced C++ OOP Project · File I/O · STL · ~420 Lines
+C++17 OOP File I/O STL Portfolio
+Hamza · BSCS, PUCIT Lahore · Upwork Portfolio
+Student(int id, string name, int age,
+string contact, int marks[5], float gpa)
+: Person(name, age, contact),
+studentID(id), gpa(gpa) {
+for(int i=0; i<5; i++) this->marks[i] = marks[i];
+grade = calcGrade(gpa);
+}
+void display() const override {
+cout << "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn" << endl;
+cout << "n ID: " << studentID << " Name: " << name << endl;
+cout << "n GPA: " << gpa << " Grade: " << grade << endl;
+cout << "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn" << endl;
+}
+int getID() const { return studentID; }
+float getGPA() const { return gpa; }
+};
+// nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+// Database Manager Class (File I/O + CRUD)
+// nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+class Database {
+vector students;
+string filename = "students.dat";
+public:
+void addStudent(Student s) {
+students.push_back(s);
+saveToFile();
+cout << "[+] Student added successfully!" << endl;
+}
+Student* searchByID(int id) {
+for (auto& s : students)
+C++ Student Management System
+Advanced C++ OOP Project · File I/O · STL · ~420 Lines
+C++17 OOP File I/O STL Portfolio
+Hamza · BSCS, PUCIT Lahore · Upwork Portfolio
+if (s.getID() == id) return &s;
+return nullptr;
+}
+void displayAll() const {
+if (students.empty()) {
+cout << "No records found." << endl; return;
+}
+for (const auto& s : students) s.display();
+}
+void sortByGPA() {
+sort(students.begin(), students.end(),
+[](const Student& a, const Student& b){
+return a.getGPA() > b.getGPA();
+});
+}
+void saveToFile() {
+ofstream file(filename, ios::binary);
+for (const auto& s : students)
+file.write((char*)&s;, sizeof(Student));
+}
+void loadFromFile() {
+ifstream file(filename, ios::binary);
+Student s;
+while(file.read((char*)&s;, sizeof(Student)))
+students.push_back(s);
+}
+};
