@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Resource Hub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        /* Navigation */
+        nav {
+            background: #2c3e50;
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+
+        nav a:hover {
+            color: #3498db;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Content Sections */
+        .page-section {
+            display: none;
+            padding: 3rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .page-section.active {
+            display: block;
+        }
+
+        .page-section h2 {
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+
+        /* Cards */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .card h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        /* About Section */
+        .profile {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin: 2rem 0;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .profile-pic {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3rem;
+            font-weight: bold;
+        }
+
+        .skills-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .skill-tag {
+            background: #667eea;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        /* Contact Form */
+        .contact-form {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: 2rem auto;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #764ba2;
+        }
+
+        /* Footer */
+        footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+        }
+
+        /* Resource List */
+        .resource-list {
+            list-style: none;
+        }
+
+        .resource-list li {
+            background: white;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #667eea;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .resource-list li strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <ul>
+            <li><a href="#" onclick="showPage('home')">Home</a></li>
+            <li><a href="#" onclick="showPage('resources')">Resources</a></li>
+            <li><a href="#" onclick="showPage('study-tips')">Study Tips</a></li>
+            <li><a href="#" onclick="showPage('about')">About</a></li>
+            <li><a href="#" onclick="showPage('contact')">Contact</a></li>
+        </ul>
+    </nav>
+
+    <!-- Header -->
+    <header>
+        <h1>Student Resource Hub</h1>
+        <p>Your one-stop destination for academic success</p>
+    </header>
+
+    <!-- Page 1: Home -->
+    <section id="home" class="page-section active">
+        <h2>Welcome to Student Resource Hub</h2>
+        <p>This platform is designed to help students excel in their academic journey. Here you'll find valuable resources, study materials, and helpful tips to succeed in your studies.</p>
+        
+        <div class="card-grid">
+            <div class="card">
+                <h3>📚 Study Materials</h3>
+                <p>Access comprehensive study materials, notes, and guides for various subjects.</p>
+            </div>
+            <div class="card">
+                <h3>💡 Study Tips</h3>
+                <p>Learn effective study techniques and time management strategies.</p>
+            </div>
+            <div class="card">
+                <h3>🎯 Academic Support</h3>
+                <p>Get help with assignments, projects, and exam preparation.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Page 2: Resources -->
+    <section id="resources" class="page-section">
+        <h2>Academic Resources</h2>
+        <p>Explore our curated collection of learning resources across different subjects.</p>
+        
+        <ul class="resource-list">
+            <li>
+                <strong>Mathematics</strong>
+                Khan Academy, Wolfram Alpha, and Paul's Online Math Notes for calculus and algebra.
+            </li>
+            <li>
+                <strong>Computer Science</strong>
+                W3Schools, MDN Web Docs, and freeCodeCamp for programming tutorials and references.
+            </li>
+            <li>
+                <strong>Science</strong>
+                CrashCourse, PhET Simulations, and MIT OpenCourseWare for physics, chemistry, and biology.
+            </li>
+            <li>
+                <strong>Languages</strong>
+                Duolingo, BBC Languages, and Memrise for language learning and practice.
+            </li>
+            <li>
+                <strong>Writing & Research</strong>
+                Grammarly, Purdue OWL, and Google Scholar for writing assistance and research papers.
+            </li>
+        </ul>
+    </section>
+
+    <!-- Page 3: Study Tips -->
+    <section id="study-tips" class="page-section">
+        <h2>Effective Study Tips</h2>
+        <p>Master these techniques to improve your learning and academic performance.</p>
+        
+        <div class="card-grid">
+            <div class="card">
+                <h3>🕐 Time Management</h3>
+                <p>Create a study schedule and stick to it. Use techniques like the Pomodoro method (25 minutes of focused study followed by 5-minute breaks).</p>
+            </div>
+            <div class="card">
+                <h3>📝 Active Learning</h3>
+                <p>Don't just read passively. Take notes, summarize concepts in your own words, and teach others what you've learned.</p>
+            </div>
+            <div class="card">
+                <h3>🎯 Set Clear Goals</h3>
+                <p>Break down large tasks into smaller, manageable goals. Celebrate small victories along the way.</p>
+            </div>
+            <div class="card">
+                <h3>🔄 Regular Review</h3>
+                <p>Review material regularly using spaced repetition. This helps move information to long-term memory.</p>
+            </div>
+            <div class="card">
+                <h3>🤝 Study Groups</h3>
+                <p>Join or form study groups to discuss concepts, share resources, and motivate each other.</p>
+            </div>
+            <div class="card">
+                <h3>💤 Take Care of Yourself</h3>
+                <p>Get enough sleep, exercise regularly, and maintain a healthy diet. A healthy body supports a healthy mind.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Page 4: About -->
+    <section id="about" class="page-section">
+        <h2>About Me</h2>
+        
+        <div class="profile">
+            <div class="profile-header">
+                <div class="profile-pic">SH</div>
+                <div>
+                    <h3>Student Name</h3>
+                    <p><strong>Program:</strong> BS Computer Science</p>
+                    <p><strong>University:</strong> PUCIT, Lahore</p>
+                    <p><strong>Year:</strong> 2nd Year</p>
+                </div>
+            </div>
+            
+            <h4>About This Project</h4>
+            <p>This Student Resource Hub was created as part of my ICT Lab project. The goal is to provide fellow students with easy access to valuable academic resources and study tips that can help them succeed in their educational journey.</p>
+            
+            <h4 style="margin-top: 2rem;">Skills & Technologies</h4>
+            <div class="skills-list">
+                <span class="skill-tag">HTML5</span>
+                <span class="skill-tag">CSS3</span>
+                <span class="skill-tag">JavaScript</span>
+                <span class="skill-tag">Web Design</span>
+                <span class="skill-tag">Responsive Design</span>
+            </div>
+            
+            <h4 style="margin-top: 2rem;">Academic Background</h4>
+            <p>I am passionate about technology and education. Through this project, I aim to combine both interests by creating a platform that helps students learn more effectively and access quality educational resources.</p>
+        </div>
+    </section>
+
+    <!-- Page 5: Contact -->
+    <section id="contact" class="page-section">
+        <h2>Contact Us</h2>
+        <p style="text-align: center; margin-bottom: 2rem;">Have questions or suggestions? Feel free to reach out!</p>
+        
+        <div class="contact-form">
+            <form id="contactForm">
+                <div class="form-group">
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="subject">Subject:</label>
+                    <input type="text" id="subject" name="subject" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="message">Message:</label>
+                    <textarea id="message" name="message" rows="5" required></textarea>
+                </div>
+                
+                <button type="submit">Send Message</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2024 Student Resource Hub | ICT Lab Project | PUCIT</p>
+        <p>Created with HTML, CSS & JavaScript</p>
+    </footer>
+
+    <script>
+        function showPage(pageId) {
+            // Hide all sections
+            const sections = document.querySelectorAll('.page-section');
+            sections.forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(pageId).classList.add('active');
+            
+            // Smooth scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Form submission handler
+        document.getElementById('contactForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Thank you for your message! We will get back to you soon.');
+            this.reset();
+        });
+    </script>
+</body>
+</html>
