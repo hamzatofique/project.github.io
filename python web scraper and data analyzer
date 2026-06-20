@@ -1,0 +1,182 @@
+# ══════════════════════════════════════════════════════
+#   Web Scraper & Data Analyzer  |  Python 3.11
+#   Developer: Hamza | PUCIT Lahore
+# ══════════════════════════════════════════════════════
+
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+import matplotlib.pyplot as plt
+import json, re
+from collections import Counter
+
+# ── CONFIG ────────────────────────────────────────────
+BASE_URL    = "https://example-jobs.com/listings"
+HEADERS     = {"User-Agent": "Mozilla/5.0"}
+OUTPUT_CSV  = "jobs_clean.csv"
+OUTPUT_JSON = "jobs_data.json"
+
+# ── STEP 1: SCRAPER ───────────────────────────────────
+def scrape_jobs(url, pages=5):
+    all_jobs = []
+    for page in range(1, pages + 1):
+        print(f"  Scraping page {page}/{pages}...")
+        try:
+            resp = requests.get(f"{url}?page={page}",
+                                headers=HEADERS, timeout=10)
+            if resp.status_code != 200:
+                print(f"  [!] Failed page {page} "
+                      f"(status {resp.status_code})")
+                continue
+
+            soup  = BeautifulSoup(resp.text, "html.parser")
+            cards = soup.find_all("div", class_="job-card")
+
+            for card in cards:
+                try:
+                    job = {
+                        "title":    card.find("h2", class_="job-title").text.strip(),
+                        "company":  card.find("span", class_="company").text.strip(),
+                        "location": card.find("span", class_="location").text.strip(),
+                        "salary":   card.find("span", class_="salary").text.strip(),
+                        "skills":   [s.text for s in card.find_all("span", class_="skill")],
+                        "posted":   card.find("time")["datetime"]
+                    }
+                    all_jobs.append(job)
+                except AttributeError:
+                    continue  # skip incomplete cards
+
+        except requests.RequestException as e:
+            print(f"  [!] Request error on page {page}: {e}")
+
+    print(f"\n  [✓] Total raw jobs scraped: {len(all_jobs)}")
+    return all_jobs
+
+
+# ── STEP 2: CLEAN & STRUCTURE ─────────────────────────
+def extract_salary(s):
+    nums = re.findall(r"[\d,]+", str(s))
+    if nums:
+        return int(nums[0].replace(",", ""))
+    return None
+
+def clean_data(raw_jobs):
+    if not raw_jobs:
+        print("  [!] No data to clean.")
+        return pd.DataFrame()
+
+    df = pd.DataFrame(raw_jobs)
+    before = len(df)
+
+    df.drop_duplicates(inplace=True)
+    df.dropna(subset=["title", "company"], inplace=True)
+
+    df["salary_num"] = df["salary"].apply(extract_salary)
+    df["location"]   = df["location"].str.strip().str.title()
+    df["title"]      = df["title"].str.strip().str.title()
+    df["company"]    = df["company"].str.strip()
+    df["posted"]     = pd.to_datetime(df["posted"], errors="coerce")
+
+    after = len(df)
+    print(f"  [✓] Cleaned: {before - after} duplicates/nulls removed")
+    print(f"  [✓] Final records: {after}")
+    return df
+
+
+# ── STEP 3: ANALYSE ───────────────────────────────────
+def analyse(df):
+    if df.empty:
+        print("  [!] No data to analyse.")
+        return [], {}
+
+    all_skills = [sk for sublist in df["skills"] for sk in sublist]
+    top_skills = Counter(all_skills).most_common(10)
+    top_locs   = df["location"].value_counts().head(5)
+    avg_salary = df["salary_num"].dropna().mean()
+    top_name   = top_skills[0][0] if top_skills else "N/A"
+    top_loc    = top_locs.index[0] if not top_locs.empty else "N/A"
+
+    print("\n  📊  ANALYSIS RESULTS")
+    print(f"  {'Total Jobs Found':<20}: {len(df)}")
+    print(f"  {'Avg Salary':<20}: Rs. {avg_salary:,.0f}" if avg_salary else
+          f"  {'Avg Salary':<20}: N/A")
+    print(f"  {'Top Skill':<20}: {top_name}")
+    print(f"  {'Top Location':<20}: {top_loc}")
+
+    print("\n  Top 10 Skills:")
+    for i, (skill, count) in enumerate(top_skills, 1):
+        print(f"  {i:>2}. {skill:<25} → {count} jobs")
+
+    return top_skills, top_locs
+
+
+# ── STEP 4: EXPORT ────────────────────────────────────
+def export(df):
+    if df.empty:
+        print("  [!] Nothing to export.")
+        return
+
+    df_export = df.copy()
+    df_export["skills"] = df_export["skills"].apply(
+        lambda x: ", ".join(x) if isinstance(x, list) else x)
+    df_export["posted"] = df_export["posted"].astype(str)
+
+    df_export.to_csv(OUTPUT_CSV, index=False)
+    df_export.to_json(OUTPUT_JSON, orient="records", indent=2)
+
+    print(f"\n  [✓] Saved → {OUTPUT_CSV} "
+          f"({len(df)} rows × {len(df.columns)} columns)")
+    print(f"  [✓] Saved → {OUTPUT_JSON}")
+
+
+# ── STEP 5: VISUALISE ─────────────────────────────────
+def visualise(top_skills, top_locs):
+    if not top_skills:
+        print("  [!] No data to visualise.")
+        return
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+    fig.suptitle("Job Market Analysis", fontsize=16, fontweight="bold")
+
+    # Bar chart — top skills
+    skills, counts = zip(*top_skills)
+    bars = ax1.barh(skills, counts, color="#6C3FC5", edgecolor="white")
+    ax1.set_title("Top 10 In-Demand Skills", fontweight="bold")
+    ax1.set_xlabel("Number of Jobs")
+    ax1.invert_yaxis()
+    for bar, count in zip(bars, counts):
+        ax1.text(bar.get_width() + 0.3, bar.get_y() + bar.get_height()/2,
+                 str(count), va="center", fontsize=9)
+
+    # Pie chart — locations
+    top_locs.plot(kind="pie", ax=ax2, autopct="%1.1f%%",
+                  colors=["#6C3FC5","#E91E8C","#00BFA5","#FF6D00","#FFD60A"])
+    ax2.set_title("Jobs by Location", fontweight="bold")
+    ax2.set_ylabel("")
+
+    plt.tight_layout()
+    plt.savefig("job_analysis.png", dpi=150, bbox_inches="tight")
+    plt.show()
+    print("  [✓] Chart saved → job_analysis.png")
+
+
+# ── MAIN ──────────────────────────────────────────────
+if __name__ == "__main__":
+    import time
+    start = time.time()
+
+    print("╔══════════════════════════════════════════╗")
+    print("║   Web Scraper & Data Analyzer  v1.0     ║")
+    print("║   Developer: Hamza | PUCIT Lahore       ║")
+    print("╚══════════════════════════════════════════╝\n")
+
+    print("🚀  Starting pipeline...\n")
+
+    raw            = scrape_jobs(BASE_URL, pages=5)
+    df             = clean_data(raw)
+    top_skills, top_locs = analyse(df)
+    export(df)
+    visualise(top_skills, top_locs)
+
+    elapsed = time.time() - start
+    print(f"\n✅  Pipeline complete!  Time: {elapsed:.1f}s")
