@@ -1,0 +1,437 @@
+-- ══════════════════════════════════════════════════════
+--   Library Management System — SQL Database Project
+--   Developer: Hamza | PUCIT Lahore
+--   Database: MySQL / MariaDB
+-- ══════════════════════════════════════════════════════
+
+
+-- ── STEP 1: CREATE & SELECT DATABASE ─────────────────
+CREATE DATABASE IF NOT EXISTS LibraryDB;
+USE LibraryDB;
+
+
+-- ══════════════════════════════════════════════════════
+--   TABLE CREATION
+-- ══════════════════════════════════════════════════════
+
+-- ── Members Table ─────────────────────────────────────
+CREATE TABLE IF NOT EXISTS Members (
+    member_id     INT AUTO_INCREMENT PRIMARY KEY,
+    full_name     VARCHAR(100) NOT NULL,
+    email         VARCHAR(100) UNIQUE NOT NULL,
+    phone         VARCHAR(20),
+    address       TEXT,
+    join_date     DATE DEFAULT (CURRENT_DATE),
+    status        ENUM('Active', 'Suspended', 'Expired')
+                  DEFAULT 'Active'
+);
+
+-- ── Authors Table ─────────────────────────────────────
+CREATE TABLE IF NOT EXISTS Authors (
+    author_id     INT AUTO_INCREMENT PRIMARY KEY,
+    full_name     VARCHAR(100) NOT NULL,
+    nationality   VARCHAR(50),
+    birth_year    INT
+);
+
+-- ── Books Table ───────────────────────────────────────
+CREATE TABLE IF NOT EXISTS Books (
+    book_id       INT AUTO_INCREMENT PRIMARY KEY,
+    title         VARCHAR(200) NOT NULL,
+    author_id     INT,
+    isbn          VARCHAR(20) UNIQUE,
+    genre         VARCHAR(50),
+    published_year INT,
+    total_copies  INT DEFAULT 1,
+    available_copies INT DEFAULT 1,
+    FOREIGN KEY (author_id) REFERENCES Authors(author_id)
+        ON DELETE SET NULL
+);
+
+-- ── Borrowings Table ──────────────────────────────────
+CREATE TABLE IF NOT EXISTS Borrowings (
+    borrow_id     INT AUTO_INCREMENT PRIMARY KEY,
+    member_id     INT NOT NULL,
+    book_id       INT NOT NULL,
+    borrow_date   DATE DEFAULT (CURRENT_DATE),
+    due_date      DATE,
+    return_date   DATE,
+    fine_amount   DECIMAL(8,2) DEFAULT 0.00,
+    status        ENUM('Borrowed', 'Returned', 'Overdue')
+                  DEFAULT 'Borrowed',
+    FOREIGN KEY (member_id) REFERENCES Members(member_id),
+    FOREIGN KEY (book_id)   REFERENCES Books(book_id)
+);
+
+-- ── Fines Table ───────────────────────────────────────
+CREATE TABLE IF NOT EXISTS Fines (
+    fine_id       INT AUTO_INCREMENT PRIMARY KEY,
+    borrow_id     INT NOT NULL,
+    member_id     INT NOT NULL,
+    amount        DECIMAL(8,2) NOT NULL,
+    reason        VARCHAR(200),
+    paid          BOOLEAN DEFAULT FALSE,
+    fine_date     DATE DEFAULT (CURRENT_DATE),
+    FOREIGN KEY (borrow_id) REFERENCES Borrowings(borrow_id),
+    FOREIGN KEY (member_id) REFERENCES Members(member_id)
+);
+
+
+-- ══════════════════════════════════════════════════════
+--   SAMPLE DATA
+-- ══════════════════════════════════════════════════════
+
+-- ── Insert Authors ────────────────────────────────────
+INSERT INTO Authors (full_name, nationality, birth_year) VALUES
+('George Orwell',        'British',    1903),
+('J.K. Rowling',         'British',    1965),
+('Robert C. Martin',     'American',   1952),
+('Bjarne Stroustrup',    'Danish',     1950),
+('Mark Lutz',            'American',   1956),
+('Yuval Noah Harari',    'Israeli',    1976),
+('Dale Carnegie',        'American',   1888);
+
+-- ── Insert Books ──────────────────────────────────────
+INSERT INTO Books (title, author_id, isbn, genre, published_year, total_copies, available_copies) VALUES
+('1984',                          1, '978-0451524935', 'Fiction',      1949, 5, 3),
+('Animal Farm',                   1, '978-0451526342', 'Fiction',      1945, 4, 4),
+('Harry Potter and the Sorcerer', 2, '978-0439708180', 'Fantasy',      1997, 6, 2),
+('Clean Code',                    3, '978-0132350884', 'Programming',  2008, 3, 1),
+('The C++ Programming Language',  4, '978-0321563842', 'Programming',  2013, 4, 4),
+('Learning Python',               5, '978-1449355739', 'Programming',  2013, 5, 3),
+('Sapiens',                       6, '978-0062316097', 'History',      2011, 3, 1),
+('How to Win Friends',            7, '978-0671027032', 'Self-Help',    1936, 4, 2);
+
+-- ── Insert Members ────────────────────────────────────
+INSERT INTO Members (full_name, email, phone, address, join_date) VALUES
+('Ali Hassan',    'ali@email.com',    '0300-1234567', 'Lahore',    '2023-01-15'),
+('Sara Malik',    'sara@email.com',   '0311-2345678', 'Karachi',   '2023-03-20'),
+('Usman Tariq',   'usman@email.com',  '0321-3456789', 'Islamabad', '2023-05-10'),
+('Fatima Noor',   'fatima@email.com', '0333-4567890', 'Lahore',    '2023-07-01'),
+('Ahmed Raza',    'ahmed@email.com',  '0345-5678901', 'Lahore',    '2023-09-15'),
+('Hamza Khan',    'hamza@email.com',  '0301-6789012', 'Lahore',    '2024-01-01');
+
+-- ── Insert Borrowings ─────────────────────────────────
+INSERT INTO Borrowings (member_id, book_id, borrow_date, due_date, return_date, status) VALUES
+(1, 1, '2024-01-01', '2024-01-15', '2024-01-14', 'Returned'),
+(1, 4, '2024-01-20', '2024-02-03', NULL,          'Borrowed'),
+(2, 3, '2024-01-05', '2024-01-19', '2024-01-25', 'Returned'),
+(3, 7, '2024-01-10', '2024-01-24', NULL,          'Overdue'),
+(4, 6, '2024-01-15', '2024-01-29', '2024-01-28', 'Returned'),
+(5, 4, '2024-02-01', '2024-02-15', NULL,          'Borrowed'),
+(6, 8, '2024-02-05', '2024-02-19', NULL,          'Borrowed');
+
+-- ── Insert Fines ──────────────────────────────────────
+INSERT INTO Fines (borrow_id, member_id, amount, reason, paid) VALUES
+(3, 2, 150.00, 'Returned 6 days late (Rs.25/day)', FALSE),
+(4, 3, 350.00, 'Book overdue 14+ days',             FALSE);
+
+
+-- ══════════════════════════════════════════════════════
+--   QUERIES — CRUD OPERATIONS
+-- ══════════════════════════════════════════════════════
+
+-- ── 1. View All Books with Author ─────────────────────
+SELECT
+    b.book_id,
+    b.title,
+    a.full_name        AS author,
+    b.genre,
+    b.published_year,
+    b.total_copies,
+    b.available_copies,
+    CASE
+        WHEN b.available_copies = 0 THEN 'Not Available'
+        ELSE 'Available'
+    END                AS availability
+FROM Books b
+JOIN Authors a ON b.author_id = a.author_id
+ORDER BY b.title;
+
+
+-- ── 2. View All Active Members ────────────────────────
+SELECT
+    member_id,
+    full_name,
+    email,
+    phone,
+    join_date,
+    status
+FROM Members
+WHERE status = 'Active'
+ORDER BY join_date DESC;
+
+
+-- ── 3. View All Current Borrowings ───────────────────
+SELECT
+    br.borrow_id,
+    m.full_name       AS member,
+    b.title           AS book,
+    br.borrow_date,
+    br.due_date,
+    br.status,
+    DATEDIFF(CURRENT_DATE, br.due_date) AS days_overdue
+FROM Borrowings br
+JOIN Members m ON br.member_id = m.member_id
+JOIN Books   b ON br.book_id   = b.book_id
+WHERE br.status IN ('Borrowed', 'Overdue')
+ORDER BY br.due_date;
+
+
+-- ── 4. Search Book by Title ───────────────────────────
+SELECT
+    b.title,
+    a.full_name  AS author,
+    b.genre,
+    b.available_copies
+FROM Books b
+JOIN Authors a ON b.author_id = a.author_id
+WHERE b.title LIKE '%Python%';
+
+
+-- ── 5. Borrow a Book (Insert) ─────────────────────────
+INSERT INTO Borrowings (member_id, book_id, borrow_date, due_date, status)
+VALUES (6, 5, CURRENT_DATE, DATE_ADD(CURRENT_DATE, INTERVAL 14 DAY), 'Borrowed');
+
+-- Decrease available copies
+UPDATE Books
+SET available_copies = available_copies - 1
+WHERE book_id = 5 AND available_copies > 0;
+
+
+-- ── 6. Return a Book (Update) ─────────────────────────
+UPDATE Borrowings
+SET return_date = CURRENT_DATE,
+    status      = 'Returned'
+WHERE borrow_id = 7;
+
+-- Increase available copies
+UPDATE Books
+SET available_copies = available_copies + 1
+WHERE book_id = (
+    SELECT book_id FROM Borrowings WHERE borrow_id = 7
+);
+
+
+-- ── 7. Delete a Member ────────────────────────────────
+DELETE FROM Members
+WHERE member_id = 6
+  AND member_id NOT IN (
+      SELECT member_id FROM Borrowings WHERE status = 'Borrowed'
+  );
+
+
+-- ══════════════════════════════════════════════════════
+--   ADVANCED QUERIES & REPORTS
+-- ══════════════════════════════════════════════════════
+
+-- ── 8. Most Borrowed Books ────────────────────────────
+SELECT
+    b.title,
+    a.full_name            AS author,
+    COUNT(br.borrow_id)    AS times_borrowed
+FROM Borrowings br
+JOIN Books   b ON br.book_id   = b.book_id
+JOIN Authors a ON b.author_id  = a.author_id
+GROUP BY b.book_id, b.title, a.full_name
+ORDER BY times_borrowed DESC
+LIMIT 5;
+
+
+-- ── 9. Members with Overdue Books ────────────────────
+SELECT
+    m.full_name,
+    m.phone,
+    b.title,
+    br.due_date,
+    DATEDIFF(CURRENT_DATE, br.due_date) AS days_overdue,
+    DATEDIFF(CURRENT_DATE, br.due_date) * 25 AS fine_rs
+FROM Borrowings br
+JOIN Members m ON br.member_id = m.member_id
+JOIN Books   b ON br.book_id   = b.book_id
+WHERE br.status = 'Overdue'
+   OR (br.status = 'Borrowed'
+       AND br.due_date < CURRENT_DATE)
+ORDER BY days_overdue DESC;
+
+
+-- ── 10. Member Borrowing History ─────────────────────
+SELECT
+    br.borrow_id,
+    b.title,
+    br.borrow_date,
+    br.due_date,
+    COALESCE(br.return_date, 'Not Returned') AS return_date,
+    br.status,
+    COALESCE(f.amount, 0)                    AS fine_rs
+FROM Borrowings br
+JOIN Books  b  ON br.book_id  = b.book_id
+LEFT JOIN Fines f ON br.borrow_id = f.borrow_id
+WHERE br.member_id = 1
+ORDER BY br.borrow_date DESC;
+
+
+-- ── 11. Genre Popularity Report ──────────────────────
+SELECT
+    b.genre,
+    COUNT(br.borrow_id)  AS total_borrowed,
+    COUNT(DISTINCT b.book_id) AS unique_books
+FROM Borrowings br
+JOIN Books b ON br.book_id = b.book_id
+GROUP BY b.genre
+ORDER BY total_borrowed DESC;
+
+
+-- ── 12. Unpaid Fines Report ───────────────────────────
+SELECT
+    m.full_name,
+    m.phone,
+    SUM(f.amount)        AS total_fine_rs,
+    COUNT(f.fine_id)     AS fine_count
+FROM Fines f
+JOIN Members m ON f.member_id = m.member_id
+WHERE f.paid = FALSE
+GROUP BY m.member_id, m.full_name, m.phone
+ORDER BY total_fine_rs DESC;
+
+
+-- ── 13. Library Summary Dashboard ────────────────────
+SELECT 'Total Books'         AS metric,
+        COUNT(*)             AS value FROM Books
+UNION ALL
+SELECT 'Total Members',       COUNT(*) FROM Members
+UNION ALL
+SELECT 'Active Borrowings',   COUNT(*) FROM Borrowings
+       WHERE status = 'Borrowed'
+UNION ALL
+SELECT 'Overdue Books',       COUNT(*) FROM Borrowings
+       WHERE status = 'Overdue'
+       OR (status = 'Borrowed' AND due_date < CURRENT_DATE)
+UNION ALL
+SELECT 'Unpaid Fines (Rs.)',  COALESCE(SUM(amount), 0)
+       FROM Fines WHERE paid = FALSE;
+
+
+-- ══════════════════════════════════════════════════════
+--   STORED PROCEDURES
+-- ══════════════════════════════════════════════════════
+
+DELIMITER $$
+
+-- ── Procedure: Borrow Book ────────────────────────────
+CREATE PROCEDURE BorrowBook(
+    IN  p_member_id INT,
+    IN  p_book_id   INT,
+    OUT p_message   VARCHAR(200)
+)
+BEGIN
+    DECLARE avail INT;
+    SELECT available_copies INTO avail
+    FROM Books WHERE book_id = p_book_id;
+
+    IF avail IS NULL THEN
+        SET p_message = 'ERROR: Book not found.';
+    ELSEIF avail = 0 THEN
+        SET p_message = 'ERROR: No copies available.';
+    ELSE
+        INSERT INTO Borrowings
+            (member_id, book_id, borrow_date, due_date, status)
+        VALUES
+            (p_member_id, p_book_id,
+             CURRENT_DATE,
+             DATE_ADD(CURRENT_DATE, INTERVAL 14 DAY),
+             'Borrowed');
+
+        UPDATE Books
+        SET available_copies = available_copies - 1
+        WHERE book_id = p_book_id;
+
+        SET p_message = 'SUCCESS: Book borrowed for 14 days.';
+    END IF;
+END$$
+
+-- ── Procedure: Return Book & Calculate Fine ───────────
+CREATE PROCEDURE ReturnBook(
+    IN  p_borrow_id INT,
+    OUT p_fine      DECIMAL(8,2),
+    OUT p_message   VARCHAR(200)
+)
+BEGIN
+    DECLARE v_due    DATE;
+    DECLARE v_book   INT;
+    DECLARE v_member INT;
+    DECLARE v_days   INT;
+
+    SELECT due_date, book_id, member_id
+    INTO   v_due, v_book, v_member
+    FROM   Borrowings
+    WHERE  borrow_id = p_borrow_id;
+
+    SET v_days = DATEDIFF(CURRENT_DATE, v_due);
+
+    IF v_days > 0 THEN
+        SET p_fine = v_days * 25.00;
+        INSERT INTO Fines
+            (borrow_id, member_id, amount, reason)
+        VALUES
+            (p_borrow_id, v_member, p_fine,
+             CONCAT('Late return: ', v_days, ' days × Rs.25'));
+    ELSE
+        SET p_fine = 0.00;
+    END IF;
+
+    UPDATE Borrowings
+    SET return_date = CURRENT_DATE,
+        status      = 'Returned',
+        fine_amount = p_fine
+    WHERE borrow_id = p_borrow_id;
+
+    UPDATE Books
+    SET available_copies = available_copies + 1
+    WHERE book_id = v_book;
+
+    SET p_message = CONCAT('SUCCESS: Returned. Fine = Rs.', p_fine);
+END$$
+
+DELIMITER ;
+
+
+-- ── Call Procedures ───────────────────────────────────
+CALL BorrowBook(2, 5, @msg);  SELECT @msg;
+CALL ReturnBook(1, @fine, @msg);  SELECT @fine, @msg;
+
+
+-- ══════════════════════════════════════════════════════
+--   VIEWS
+-- ══════════════════════════════════════════════════════
+
+-- ── View: Available Books ─────────────────────────────
+CREATE OR REPLACE VIEW AvailableBooks AS
+SELECT
+    b.book_id,
+    b.title,
+    a.full_name     AS author,
+    b.genre,
+    b.available_copies
+FROM Books b
+JOIN Authors a ON b.author_id = a.author_id
+WHERE b.available_copies > 0;
+
+-- ── View: Overdue Borrowings ──────────────────────────
+CREATE OR REPLACE VIEW OverdueBorrowings AS
+SELECT
+    m.full_name,
+    m.phone,
+    b.title,
+    br.due_date,
+    DATEDIFF(CURRENT_DATE, br.due_date)      AS days_late,
+    DATEDIFF(CURRENT_DATE, br.due_date) * 25 AS fine_rs
+FROM Borrowings br
+JOIN Members m ON br.member_id = m.member_id
+JOIN Books   b ON br.book_id   = b.book_id
+WHERE br.due_date < CURRENT_DATE
+  AND br.status != 'Returned';
+
+-- Use the views
+SELECT * FROM AvailableBooks;
+SELECT * FROM OverdueBorrowings;
